@@ -1,0 +1,27 @@
+{
+ :reactor {:chan-sliding-buffer-size 16384}
+
+ :transports {:zmq-rutarget {:use  "io.sberlabs.pipeline-transports-zmq/zmq-sub-transport"
+                             :addr "tcp://app48.rutarget.ru:60001"
+                             :topic "sberlabs"}}
+
+ :codec {:use "io.sberlabs.pipeline-codecs-rutarget/rutarget-codec"}
+
+ :store {:use "io.sberlabs.pipeline-stores-kafka/kafka-batching-store"
+         :proxy-url "http://localhost:8082"
+         :schema-registry-url "http://localhost:8081"
+         :topic "rutarget"
+         :schema {:type "record"
+                  :name "Rutarget"
+                  :namespace "io.sberlabs.records"
+                  :doc "Schema for visitors event stream from Rutarget.ru"
+                  :fields [{:name "id"       :type :string}
+                           {:name "url"      :type :string}
+                           {:name "ip"       :type :string}
+                           {:name "ip_trunc" :type :boolean :default false}
+                           {:name "ua"       :type :string}
+                           {:name "ts"       :type :long}]}
+         :batch-size 1000
+         :timeout 1000
+         :chan-sliding-buffer-size 16384}
+ }

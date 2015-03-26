@@ -1,0 +1,32 @@
+transports:
+  zmq_rutarget:
+    use: io.sberlabs.pipeline-transports-zmq/zmq-sub-transport
+    addr: tcp://app48.rutarget.ru:60001
+    topic: sberlabs
+codec:
+  use: io.sberlabs.pipeline-codecs-rutarget/rutarget-codec
+store:
+  use: io.sberlabs.pipeline-stores-kafka/kafka-batching-store
+  proxy_url: http://localhost:8082
+  schema_registry_url: http://localhost:8081
+  topic: rutarget
+  batch_size: 1000
+  timeout: 1000
+  schema:
+    type: record
+    namespace: io.sberlabs.records
+    doc: Schema for visitors event stream from Rutarget.ru
+    fields:
+      - name: id
+        type: string
+      - name: url
+        type: string
+      - name: ip
+        type: string
+      - name: ip_trunc
+        type: boolean
+        default: false
+      - name: ua
+        type: string
+      - name: ts
+        type: long

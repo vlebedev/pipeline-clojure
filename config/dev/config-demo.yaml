@@ -1,0 +1,8 @@
+codec:
+  use: io.sberlabs.pipeline-core/edn-codec
+transports:
+  stdin:
+    use: io.sberlabs.pipeline-core/stdin-transport
+    funnystring: "ho ho ho"
+store:
+  use: io.sberlabs.pipeline-core/stdout-store
