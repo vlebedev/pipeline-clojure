@@ -11,12 +11,13 @@
         extended-config (-> config
                             (assoc :schema-id schema-id)
                             (assoc :partitions-number partitions-number)
-                            (assoc :record-partitoner kafka/guava-consistent-hash-partitioner))
+                            (assoc :record-partitioner kafka/guava-consistent-hash-partitioner))
         sink (a/chan (a/sliding-buffer chan-sliding-buffer-size))]
     (reify
       Store
       (store! [this payload]
-        (go (>! sink payload)))
+        (when (not (nil? payload))
+          (go (>! sink payload))))
       Service
       (start! [this]
         (go-loop []
@@ -26,8 +27,8 @@
                    timeout-ch (a/timeout timeout)]
               (let [[msg ch] (a/alts! [sink timeout-ch])]
                 (if (= ch sink)
-                  (if (= cnt 0)
-                    (kafka/produce-batch extended-config (conj batch msg))
+                  (if (= cnt 2)
+                    (kafka/produce-batch (conj batch msg) extended-config)
                     (recur (conj batch msg) (dec cnt) timeout-ch))
-                  (kafka/produce-batch extended-config batch))))
+                  (kafka/produce-batch batch extended-config))))
             (recur)))))))

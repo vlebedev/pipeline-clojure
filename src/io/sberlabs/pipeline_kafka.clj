@@ -45,21 +45,25 @@
       (throw+ {:type ::proxy-get-topic-partitions-failed :topic topic :status status}))))
 
 (defn guava-consistent-hash-partitioner
-  [record key buckets]
-  (Hashing/consistentHash (crc32 (record key)) buckets))
+  [key buckets]
+  (Hashing/consistentHash (crc32 key) buckets))
 
+;; TODO: solve message key schema mystery
 (defn partition-batch
-  [{:keys [partitions-number record-partitioner]} batch]
-  (map #(assoc % :partition (record-partitioner (% :key))) batch))
+  [batch record-partitioner partitions-number]
+  (map #(-> %
+            (assoc :partition (record-partitioner (:key %) partitions-number))
+            (dissoc :key)) batch))
 
 (defn produce-batch
-  [{:keys [proxy-url topic schema-id record-partitioner] :as config} batch]
-  (let [body {:value_schema_id schema-id
-              :records (partition-batch config batch)}
+  [batch {:keys [proxy-url topic schema-id partitions-number record-partitioner]}]
+  (let [req-body (json/generate-string  {:value_schema_id schema-id
+                                         ;; :key_schema "{\"name\": \"string\", \"type\": \"string\"}"
+                                         :records (partition-batch batch record-partitioner partitions-number)})
         options {:content-type "application/vnd.kafka.avro.v1+json"
                  :accept "application/vnd.kafka.v1+json, application/vnd.kafka+json, application/json"
-                 :body body}
-         {:keys [status headers body error] :as resp}
+                 :body req-body}
+        {:keys [status headers body error] :as resp}
         @(http/post (str proxy-url "/topics/" topic) options)]
     (if (= status 200)
       (json/parse-string body)
